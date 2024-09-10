@@ -4,7 +4,8 @@ Codigos de ordenamiento y Multiplicacion
 
 ## Descripción
 
-Este repositorio contiene los códigos y experimentos asociados a la evaluación experimental de distintos algoritmos de ordenamiento y multiplicación de matrices. Este proyecto forma parte de una tarea cuyo objetivo es que los estudiantes implementen y comparen algoritmos populares en estos dominios, utilizando herramientas de profiling para medir su rendimiento en diversos conjuntos de datos.
+Este repositorio contiene los códigos y experimentos asociados a la evaluación experimental de distintos algoritmos de ordenamiento y multiplicación de matrices. Este proyecto forma parte de una tarea cuyo objetivo es que se implementen y comparen algoritmos populares en estos dominios, utilizando herramientas de profiling para medir su rendimiento en diversos conjuntos de datos.
+Los algoritmos fueron sacados del libro guia del curso junto con la pagina web "         "
 
 ## Algoritmos Implementados
 
