@@ -201,8 +201,8 @@ signed main() {
         }
 
     // Guardar los tiempos de multiplicación en archivos CSV
-    saveTimesToCSV(squareMultiplicationTimes_t, "square_multiplication_t_times.csv");
-    saveTimesToCSV(rectangularMultiplicationTimes_t, "rectangular_multiplication_t_times.csv");
+    saveTimesToCSV(squareMultiplicationTimes_t, "../CSV_times_M/square_multiplication_t_times.csv");
+    saveTimesToCSV(rectangularMultiplicationTimes_t, "../CSV_times_M/rectangular_multiplication_t_times.csv");
 
     return 0;
 }
