@@ -71,7 +71,6 @@ tuple<int, int> getMatrixDimensions(const string& filepath) {
     file.read(reinterpret_cast<char*>(&rows), sizeof(rows));
     file.read(reinterpret_cast<char*>(&cols), sizeof(cols));
     file.close();
-    cerr << "Filas: " << rows << ", Columnas: " << cols << endl;
 
     return {rows, cols};
 }
@@ -126,8 +125,6 @@ signed main() {
                 cerr << "Error al leer matrices: " << fileA << " o " << fileB << endl;
                 continue;
             }
-            cout << "Matriz A: " << matrixA.size() << "x" << matrixA[0].size()
-     << " con Matriz B: " << matrixB.size() << "x" << matrixB[0].size() << endl;
             // Verificar que las dimensiones son compatibles para la multiplicación
             if (matrixA[0].size() != matrixB.size()) {
                 continue;
@@ -189,4 +186,5 @@ signed main() {
 
     return 0;
 }
+
 

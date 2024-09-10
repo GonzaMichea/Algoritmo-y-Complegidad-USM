@@ -39,11 +39,11 @@ $(EXEC4): $(OBJ4)
 
 # Run all executables
 run: all
-	@echo "Running mergesort..."
+	@echo "Running IterativoTradicional..."
 	./$(EXEC2)
-	@echo "Running quicksort..."
+	@echo "Running strassen..."
 	./$(EXEC3)
-	@echo "Running selectionsort..."
+	@echo "Running traspuesta..."
 	./$(EXEC4)
 
 # Clean up generated files

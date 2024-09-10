@@ -5,148 +5,163 @@ using namespace std;
 namespace fs = std::filesystem;
 #define int long long
 
+// Leer una matriz desde un archivo binario
 vector<vector<int>> readMatrixFromBinaryFile(const string& filepath) {
     ifstream file(filepath, ios::binary);
-    if (!file) {
+    if (!file.is_open()) {
         cerr << "No se pudo abrir el archivo para lectura: " << filepath << endl;
         return {};
     }
 
     int rows, cols;
+    // Leer las dimensiones de la matriz
     file.read(reinterpret_cast<char*>(&rows), sizeof(rows));
     file.read(reinterpret_cast<char*>(&cols), sizeof(cols));
 
     vector<vector<int>> matrix(rows, vector<int>(cols));
-    file.read(reinterpret_cast<char*>(matrix.data()->data()), rows * cols * sizeof(int));
+    // Leer los elementos de la matriz
+    for (int i = 0; i < rows; ++i) {
+        file.read(reinterpret_cast<char*>(matrix[i].data()), cols * sizeof(int));
+    }
+
+    file.close();
     return matrix;
 }
 
 // Función para sumar dos matrices
-void sumar(vector<vector<int>>& result, const vector<vector<int>>& X, const vector<vector<int>>& Y) {
-    int n = X.size();
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            result[i][j] = X[i][j] + Y[i][j];
+void sumMatrices(const vector<vector<int>>& A, const vector<vector<int>>& B, vector<vector<int>>& C, int n) {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            C[i][j] = A[i][j] + B[i][j];
+        }
+    }
 }
 
-void restar(vector<vector<int>>& result, const vector<vector<int>>& X, const vector<vector<int>>& Y) {
-    int n = X.size();
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            result[i][j] = X[i][j] - Y[i][j];
+// Función para restar dos matrices
+void subtractMatrices(const vector<vector<int>>& A, const vector<vector<int>>& B, vector<vector<int>>& C, int n) {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            C[i][j] = A[i][j] - B[i][j];
+        }
+    }
 }
 
-vector<vector<int>> strassen(vector<vector<int>> &X, vector<vector<int>> &Y) {
-    cout << "Strassen" << endl;
-    int n = X.size();
-    cout << "n: " << n << endl;
-    if (n <= 64) {
-        cout<<"case base"<<endl; // Base case size, adjust based on profiling
-        vector<vector<int>> Z(n, vector<int>(n, 0));
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                for (int k = 0; k < n; k++)
-                    Z[i][j] += X[i][k] * Y[k][j];
-                    cout<<"multi"<<endl;
-        return Z;
+// Multiplicación tradicional para tamaños pequeños
+void traditionalMultiplication(const vector<vector<int>>& A, const vector<vector<int>>& B, vector<vector<int>>& C, int n) {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            C[i][j] = 0;
+            for (int k = 0; k < n; ++k) {
+                C[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+}
+
+// Implementación del algoritmo de Strassen
+void strassen(const vector<vector<int>>& A, const vector<vector<int>>& B, vector<vector<int>>& C, int n) {
+    if (n <= 16) {  // Caso base: usa multiplicación tradicional
+        traditionalMultiplication(A, B, C, n);
+        return;
     }
 
-    int k = n / 2;
-    vector<vector<int>> A(k, vector<int>(k)), B(k, vector<int>(k)), C(k, vector<int>(k)), D(k, vector<int>(k)),
-                        E(k, vector<int>(k)), F(k, vector<int>(k)), G(k, vector<int>(k)), H(k, vector<int>(k));
+    int newSize = n / 2;
+    vector<vector<int>> A11(newSize, vector<int>(newSize)), A12(newSize, vector<int>(newSize));
+    vector<vector<int>> A21(newSize, vector<int>(newSize)), A22(newSize, vector<int>(newSize));
+    vector<vector<int>> B11(newSize, vector<int>(newSize)), B12(newSize, vector<int>(newSize));
+    vector<vector<int>> B21(newSize, vector<int>(newSize)), B22(newSize, vector<int>(newSize));
 
-    vector<vector<int>> Z11(k, vector<int>(k)), Z12(k, vector<int>(k)), Z21(k, vector<int>(k)), Z22(k, vector<int>(k)),
-                        temp1(k, vector<int>(k)), temp2(k, vector<int>(k));
+    vector<vector<int>> M1(newSize, vector<int>(newSize)), M2(newSize, vector<int>(newSize));
+    vector<vector<int>> M3(newSize, vector<int>(newSize)), M4(newSize, vector<int>(newSize));
+    vector<vector<int>> M5(newSize, vector<int>(newSize)), M6(newSize, vector<int>(newSize));
+    vector<vector<int>> M7(newSize, vector<int>(newSize));
 
-    for (int i = 0; i < k; i++)
-        for (int j = 0; j < k; j++) {
-            int index_i_k = i + k;
-            int index_j_k = j + k;
-            A[i][j] = X[i][j];
-            B[i][j] = X[i][index_j_k];
-            C[i][j] = X[index_i_k][j];
-            D[i][j] = X[index_i_k][index_j_k];
+    // Divide las matrices A y B en submatrices
+    for (int i = 0; i < newSize; ++i) {
+        for (int j = 0; j < newSize; ++j) {
+            A11[i][j] = A[i][j];
+            A12[i][j] = A[i][j + newSize];
+            A21[i][j] = A[i + newSize][j];
+            A22[i][j] = A[i + newSize][j + newSize];
 
-            E[i][j] = Y[i][j];
-            F[i][j] = Y[i][index_j_k];
-            G[i][j] = Y[index_i_k][j];
-            H[i][j] = Y[index_i_k][index_j_k];
-        }
-
-    restar(temp1, F, H); // F-H
-    vector<vector<int>> P1 = strassen(A, temp1); // P1 = A(F-H)
-
-    sumar(temp1, A, B); // A+B
-    vector<vector<int>> P2 = strassen(temp1, H); // P2 = (A+B)H
-
-    sumar(temp1, C, D); // C+D
-    vector<vector<int>> P3 = strassen(temp1, E); // P3 = (C+D)E
-
-    restar(temp1, G, E); // G-E
-    vector<vector<int>> P4 = strassen(D, temp1); // P4 = D(G-E)
-
-    sumar(temp1, A, D); // A+D
-    sumar(temp2, E, H); // E+H
-    vector<vector<int>> P5 = strassen(temp1, temp2); // P5 = (A+D)(E+H)
-
-    restar(temp1, B, D); // B-D
-    sumar(temp2, G, H);  // G+H
-    vector<vector<int>> P6 = strassen(temp1, temp2); // P6 = (B-D)(G+H)
-
-    restar(temp1, A, C); // A-C
-    sumar(temp2, E, F);  // E+F
-    vector<vector<int>> P7 = strassen(temp1, temp2); // P7 = (A-C)(E+F)
-
-    for (int i = 0; i < k; i++) {
-        for (int j = 0; j < k; j++) {
-            Z11[i][j] = P5[i][j] + P4[i][j] - P2[i][j] + P6[i][j];
-            Z12[i][j] = P1[i][j] + P2[i][j];
-            Z21[i][j] = P3[i][j] + P4[i][j];
-            Z22[i][j] = P1[i][j] + P5[i][j] - P3[i][j] - P7[i][j];
+            B11[i][j] = B[i][j];
+            B12[i][j] = B[i][j + newSize];
+            B21[i][j] = B[i + newSize][j];
+            B22[i][j] = B[i + newSize][j + newSize];
         }
     }
 
-    vector<vector<int>> Z(n, vector<int>(n));
-    for (int i = 0; i < k; i++) {
-        for (int j = 0; j < k; j++) {
-            Z[i][j] = Z11[i][j];
-            Z[i][j + k] = Z12[i][j];
-            Z[i + k][j] = Z21[i][j];
-            Z[i + k][j + k] = Z22[i][j];
+    // Calculo de los 7 productos intermedios
+    vector<vector<int>> AResult(newSize, vector<int>(newSize));
+    vector<vector<int>> BResult(newSize, vector<int>(newSize));
+
+    sumMatrices(A11, A22, AResult, newSize);
+    sumMatrices(B11, B22, BResult, newSize);
+    strassen(AResult, BResult, M1, newSize);
+
+    sumMatrices(A21, A22, AResult, newSize);
+    strassen(AResult, B11, M2, newSize);
+
+    subtractMatrices(B12, B22, BResult, newSize);
+    strassen(A11, BResult, M3, newSize);
+
+    subtractMatrices(B21, B11, BResult, newSize);
+    strassen(A22, BResult, M4, newSize);
+
+    sumMatrices(A11, A12, AResult, newSize);
+    strassen(AResult, B22, M5, newSize);
+
+    subtractMatrices(A21, A11, AResult, newSize);
+    sumMatrices(B11, B12, BResult, newSize);
+    strassen(AResult, BResult, M6, newSize);
+
+    subtractMatrices(A12, A22, AResult, newSize);
+    sumMatrices(B21, B22, BResult, newSize);
+    strassen(AResult, BResult, M7, newSize);
+
+    // Combina los resultados en la matriz C
+    for (int i = 0; i < newSize; ++i) {
+        for (int j = 0; j < newSize; ++j) {
+            C[i][j] = M1[i][j] + M4[i][j] - M5[i][j] + M7[i][j]; // C11
+            C[i][j + newSize] = M3[i][j] + M5[i][j]; // C12
+            C[i + newSize][j] = M2[i][j] + M4[i][j]; // C21
+            C[i + newSize][j + newSize] = M1[i][j] - M2[i][j] + M3[i][j] + M6[i][j]; // C22
         }
     }
-
-    return Z;
 }
-void saveTimesToCSV(const vector<tuple<int, int, int, int, int>>& times, const string& filename) {
+
+// Guardar los tiempos de multiplicación en un archivo CSV
+void saveTimesToCSV(const vector<tuple<int, int, int>>& times, const string& filename) {
     ofstream file(filename);
-    if (file) {
-        file << "Matrix A Rows,Matrix A Cols,Matrix B Rows,Matrix B Cols,Time (micro)\n";
-        for (const auto& [rowsA, colsA, rowsB, colsB, time] : times) {
-            file << rowsA << "," << colsA << "," << rowsB << "," << colsB << "," << time << "\n";
+    if (file.is_open()) {
+        file << "Matrix A Size,Matrix B Size,Time (micro)\n";
+        for (const auto& [sizeA, sizeB, time] : times) {
+            file << sizeA << "," << sizeB << "," << time << "\n";
         }
+        file.close();
     } else {
         cerr << "No se pudo abrir el archivo para escritura: " << filename << endl;
     }
 }
 
-tuple<int, int> getMatrixDimensions(const string& filepath) {
+// Función para obtener el tamaño de una matriz desde su archivo
+int getMatrixSize(const string& filepath) {
     ifstream file(filepath, ios::binary);
-    if (!file) {
+    if (!file.is_open()) {
         cerr << "No se pudo abrir el archivo para lectura: " << filepath << endl;
-        return {0, 0};
+        return 0;
     }
 
     int rows, cols;
     file.read(reinterpret_cast<char*>(&rows), sizeof(rows));
     file.read(reinterpret_cast<char*>(&cols), sizeof(cols));
-    return {rows, cols};
+    file.close();
+    return rows; // Asumimos que es una matriz cuadrada
 }
 
 signed main() {
     vector<string> squareFiles1;
     vector<string> squareFiles2;
-
 
     // Cargar todos los archivos de matrices cuadradas
     for (const auto& entry : fs::directory_iterator("datasets/square_matrices1")) {
@@ -156,55 +171,51 @@ signed main() {
         squareFiles2.push_back(entry.path().string());
     }
 
-
     // Ordenar archivos de matrices cuadradas por dimensiones
     sort(squareFiles1.begin(), squareFiles1.end(), [](const string& a, const string& b) {
-        auto [rowsA, colsA] = getMatrixDimensions(a);
-        auto [rowsB, colsB] = getMatrixDimensions(b);
-        return rowsA < rowsB || (rowsA == rowsB && colsA < colsB);
+        return getMatrixSize(a) < getMatrixSize(b);
+    });
+    sort(squareFiles2.begin(), squareFiles2.end(), [](const string& a, const string& b) {
+        return getMatrixSize(a) < getMatrixSize(b);
     });
 
-    sort(squareFiles2.begin(), squareFiles2.end(), [](const string& a, const string& b) {
-        auto [rowsA, colsA] = getMatrixDimensions(a);
-        auto [rowsB, colsB] = getMatrixDimensions(b);
-        return rowsA < rowsB || (rowsA == rowsB && colsA < colsB);
-    });
-    vector<tuple<int, int, int, int, int>> squareMultiplicationTimes;
-    vector<tuple<int, int, int, int, int>> rectangularMultiplicationTimes;
+    vector<tuple<int, int, int>> multiplicationTimes;
 
     // Multiplicar todas las combinaciones de matrices cuadradas
     for (const auto& fileA : squareFiles1) {
         for (const auto& fileB : squareFiles2) {
-            auto matrixA = readMatrixFromBinaryFile(fileA);
-            auto matrixB = readMatrixFromBinaryFile(fileB);
-            if (matrixA.empty() || matrixB.empty()) {
-                cerr << "Error al leer matrices: " << fileA << " o " << fileB << endl;
-                continue;
+            if (fileA != fileB) {  // Evitar multiplicar una matriz por sí misma
+                auto matrixA = readMatrixFromBinaryFile(fileA);
+                auto matrixB = readMatrixFromBinaryFile(fileB);
+
+                if (matrixA.empty() || matrixB.empty()) {
+                    cerr << "Error al leer matrices: " << fileA << " o " << fileB << endl;
+                    continue;
+                }
+
+                // Verificar que las dimensiones son compatibles para la multiplicación
+                if (matrixA[0].size() != matrixB.size()) {
+                    continue;
+                }
+
+                // Medir el tiempo de multiplicación de matrices
+                auto start = chrono::high_resolution_clock::now();
+                vector<vector<int>> resultMatrix(matrixA.size(), vector<int>(matrixB[0].size()));
+                strassen(matrixA, matrixB, resultMatrix, matrixA.size());
+                auto end = chrono::high_resolution_clock::now();
+                int duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
+
+                // Extraer dimensiones de las matrices
+                int sizeA = matrixA.size();
+                int sizeB = matrixB.size();
+
+                multiplicationTimes.emplace_back(sizeA, sizeB, duration);
             }
-            cout << "Matriz A: " << matrixA.size() << "x" << matrixA[0].size()
-     << " con Matriz B: " << matrixB.size() << "x" << matrixB[0].size() << endl;
-            // Verificar que las dimensiones son compatibles para la multiplicación
-            if (matrixA[0].size() != matrixB.size()) {
-                continue;
-            }
-
-            // Medir el tiempo de multiplicación de matrices
-            auto start = chrono::high_resolution_clock::now();
-            vector<vector<int>> resultMatrix = strassen(matrixA, matrixB);
-            auto end = chrono::high_resolution_clock::now();
-            int duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
-
-            // Extraer dimensiones de las matrices
-            int rowsA = matrixA.size();
-            int colsA = matrixA[0].size();
-            int rowsB = matrixB.size();
-            int colsB = matrixB[0].size();
-
-            squareMultiplicationTimes.emplace_back(rowsA, colsA, rowsB, colsB, duration);
         }
     }
 
-    saveTimesToCSV(squareMultiplicationTimes, "multiplication_times_square.csv");
+    // Guardar los tiempos en un archivo CSV
+    saveTimesToCSV(multiplicationTimes, "../CSV_times_M/strassen_multiplication_times.csv");
 
     return 0;
 }
