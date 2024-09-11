@@ -1,4 +1,4 @@
-#include <bits/stdc++.h>
+ #include <bits/stdc++.h>
 #include <filesystem>
 #include <chrono>
 using namespace std;
@@ -25,23 +25,35 @@ vector<vector<int>> readMatrixFromBinaryFile(const string& filepath) {
     file.close();
     return matrix;
 }
+// Transponer una matriz
+vector<vector<int>> transposeMatrix(const vector<vector<int>>& matriz) {
+    int filas = matriz.size();
+    int columnas = matriz[0].size();
+    vector<vector<int>> T(columnas, vector<int>(filas));
 
+    for (int i = 0; i < filas; ++i) {
+        for (int j = 0; j < columnas; ++j) {
+            T[j][i] = matriz[i][j];
+        }
+    }
+    return T;
+}
 // Multiplicar dos matrices
 vector<vector<int>> multiplyMatrices(const vector<vector<int>>& A, const vector<vector<int>>& B) {
-    int n = A.size();      // Filas de A
-    int p = B.size();  
-    vector<vector<int>> result(n, vector<int>(p, 0));  // Resultado de dimensiones n x p
+    int m = A.size();        // Número de filas de A
+    int n = A[0].size();     // Número de columnas de A y filas de B
     
-    // Multiplicación fila por fila
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < p; ++j) {
-            for (size_t k = 0; k < A[0].size(); ++k) {  // Cambiado a size_t
-                result[i][j] += A[i][k] * B[j][k];  // Fila por fila
+    vector<vector<int>> Bt = transposeMatrix(B);  
+    vector<vector<int>> C(m, vector<int>(m, 0));  
+
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < m; ++j) {
+            for (int k = 0; k < n; ++k) {
+                C[i][j] += A[i][k] * Bt[j][k];
             }
         }
     }
-    
-    return result;
+    return C;
 }
 
 // Guardar los tiempos de multiplicación en un archivo CSV
@@ -74,19 +86,6 @@ tuple<int, int> getMatrixDimensions(const string& filepath) {
     return {rows, cols};
 }
 
-// Transponer una matriz
-vector<vector<int>> transposeMatrix(const vector<vector<int>>& A) {
-    int rows = A.size();
-    int cols = A[0].size();
-    vector<vector<int>> transposed(cols, vector<int>(rows));
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            transposed[j][i] = A[i][j];
-        }
-    }
-
-    return transposed;
-}
 
 signed main() {
     vector<string> squareFiles1;
@@ -136,6 +135,7 @@ signed main() {
             auto matrixB = readMatrixFromBinaryFile(fileB);
             auto matrixB_t = transposeMatrix(matrixB);
             if (matrixA.empty() || matrixB.empty()) {
+                cerr << "Error al leer matrices: " << fileA << " o " << fileB << endl;
                 continue;
             }
 
@@ -159,37 +159,39 @@ signed main() {
             squareMultiplicationTimes_t.emplace_back(rowsA, colsA, rowsB, colsB, duration);
         }
     }
-    
     // Multiplicar todas las combinaciones de matrices rectangulares
     for (const auto& fileA : rectangularFiles) {
-        for (const auto& fileB : rectangularFiles) {
-            if (fileA != fileB) {  // Evitar multiplicar una matriz por sí misma
-                auto matrixA = readMatrixFromBinaryFile(fileA);
-                auto matrixB = readMatrixFromBinaryFile(fileB);
-                auto matrixB_t = transposeMatrix(matrixB);
-                if (matrixA.empty() || matrixB.empty()) {
-                    continue;
-                }
+            for (const auto& fileB : rectangularFiles) {
+                if (fileA != fileB) {  // Evitar multiplicar una matriz por sí misma
+                    auto matrixA = readMatrixFromBinaryFile(fileA);
+                    auto matrixB = readMatrixFromBinaryFile(fileB);
+                    if (matrixA.empty() || matrixB.empty()) {
+                        cerr << "Error al leer matrices: " << fileA << " o " << fileB << endl;
+                        continue;
+                    }
 
-                // Verificar que las dimensiones son compatibles para la multiplicación
-                if (matrixA.size() == matrixB_t.size() && matrixA[0].size() == matrixB_t[0].size()) {
-                    // Medir el tiempo de multiplicación de matrices
-                    auto start = chrono::high_resolution_clock::now();
-                    vector<vector<int>> resultMatrix = multiplyMatrices(matrixA, matrixB_t);
-                    auto end = chrono::high_resolution_clock::now();
-                    int duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
+                    // Verificar que las dimensiones son compatibles para la multiplicación
+                    if (matrixA.size() == matrixB[0].size() && matrixA[0].size() == matrixB.size()) {
+                        // Medir el tiempo de multiplicación de matrices
+                        auto start = chrono::high_resolution_clock::now();
+                        vector<vector<int>> resultMatrix = multiplyMatrices(matrixA, matrixB);
+                        auto end = chrono::high_resolution_clock::now();
+                        int duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
 
-                    // Extraer dimensiones de las matrices
-                    int rowsA = matrixA.size();
-                    int colsA = matrixA[0].size();
-                    int rowsB = matrixB.size();
-                    int colsB = matrixB[0].size();
+                        // Extraer dimensiones de las matrices
+                        int rowsA = matrixA.size();
+                        int colsA = matrixA[0].size();
+                        int rowsB = matrixB.size();
+                        int colsB = matrixB[0].size();
 
-                    rectangularMultiplicationTimes_t.emplace_back(rowsA, colsA, rowsB, colsB, duration);
+                        rectangularMultiplicationTimes_t.emplace_back(rowsA, colsA, rowsB, colsB, duration);
+                    }else {
+                        continue;
+                    }
+
                 }
             }
         }
-    }
 
     // Guardar los tiempos de multiplicación en archivos CSV
     saveTimesToCSV(squareMultiplicationTimes_t, "../CSV_times_M/square_multiplication_t_times.csv");
@@ -197,3 +199,7 @@ signed main() {
 
     return 0;
 }
+
+
+
+

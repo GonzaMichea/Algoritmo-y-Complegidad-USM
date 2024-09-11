@@ -60,7 +60,7 @@ void traditionalMultiplication(const vector<vector<int>>& A, const vector<vector
 
 // Implementación del algoritmo de Strassen
 void strassen(const vector<vector<int>>& A, const vector<vector<int>>& B, vector<vector<int>>& C, int n) {
-    if (n <= 16) {  // Caso base: usa multiplicación tradicional
+    if (n <= 64) {  // Caso base: usa multiplicación tradicional
         traditionalMultiplication(A, B, C, n);
         return;
     }
@@ -131,12 +131,12 @@ void strassen(const vector<vector<int>>& A, const vector<vector<int>>& B, vector
 }
 
 // Guardar los tiempos de multiplicación en un archivo CSV
-void saveTimesToCSV(const vector<tuple<int, int, int>>& times, const string& filename) {
+void saveTimesToCSV(const vector<tuple<int, int, int, int, int>>& times, const string& filename) {
     ofstream file(filename);
     if (file.is_open()) {
-        file << "Matrix A Size,Matrix B Size,Time (micro)\n";
-        for (const auto& [sizeA, sizeB, time] : times) {
-            file << sizeA << "," << sizeB << "," << time << "\n";
+        file << "Matrix A Rows,Matrix A Cols,Matrix B Rows,Matrix B Cols,Time (micro)\n";
+        for (const auto& [rowsA, colsA, rowsB, colsB, time] : times) {
+            file << rowsA << "," << colsA << "," << rowsB << "," << colsB << "," << time << "\n";
         }
         file.close();
     } else {
@@ -179,7 +179,7 @@ signed main() {
         return getMatrixSize(a) < getMatrixSize(b);
     });
 
-    vector<tuple<int, int, int>> multiplicationTimes;
+    vector<tuple<int, int, int, int, int>> squareMultiplicationTimes;
 
     // Multiplicar todas las combinaciones de matrices cuadradas
     for (const auto& fileA : squareFiles1) {
@@ -209,13 +209,13 @@ signed main() {
                 int sizeA = matrixA.size();
                 int sizeB = matrixB.size();
 
-                multiplicationTimes.emplace_back(sizeA, sizeB, duration);
+                squareMultiplicationTimes.emplace_back(sizeA, sizeB,sizeA, sizeB,duration);
             }
         }
     }
 
     // Guardar los tiempos en un archivo CSV
-    saveTimesToCSV(multiplicationTimes, "../CSV_times_M/strassen_multiplication_times.csv");
+    saveTimesToCSV(squareMultiplicationTimes, "../CSV_times_M/strassen_multiplication_times.csv");
 
     return 0;
 }
